@@ -71,7 +71,7 @@ class RepairInvalidShares extends BasicEmitter implements \OC\RepairStep {
 	}
 
 	/**
-	 * Remove unique user shares where the parent share does not exist anymore
+	 * Remove shares where the parent share does not exist anymore
 	 */
 	private function removeSharesNonExistingParent() {
 		$deletedEntries = 0;
