@@ -333,9 +333,42 @@ class FeatureContext extends BehatContext {
 	}
 
 	/**
-	 * @When /^creating the user "([^"]*)r"$/
+	 * @Given /^Create user "([^"]*)"$/
+	 */
+	public function createUser($user) {
+		$this->creatingTheUser($user);
+		$this->userExists($user);
+	}
+
+	/**
+	 * @Then /^Delete user "([^"]*)"$/
+	 */
+	public function deleteUser($user) {
+		$this->deletingTheUser($user);
+		$this->userDoesNotExist($user);
+	}
+
+	/**
+	 * @Given /^Create group "([^"]*)"$/
+	 */
+	public function createGroup($group) {
+		$this->creatingTheGroup($group);
+		$this->groupExists($group);
+	}
+
+	/**
+	 * @Then /^Delete group "([^"]*)"$/
+	 */
+	public function deleteGroup($group) {
+		$this->deletingTheGroup($group);
+		$this->groupDoesNotExist($group);
+	}
+
+	/**
+	 * @When /^creating the user "([^"]*)"$/
 	 */
 	public function creatingTheUser($user) {
+		/*
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user";
 		$client = new Client();
 		$options = [];
@@ -348,26 +381,67 @@ class FeatureContext extends BehatContext {
 				'userid' => $user,
 				'password' => '123456'
 			]
-		]);
-
-	}
-
-	/**
-	 * @When /^creating the group "([^"]*)r"$/
-	 */
-	public function creatingTheGroup($group) {
-		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/groups/addgroup";
+		]);*/
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users";
 		$client = new Client();
 		$options = [];
 		if ($this->currentUser === 'admin') {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$this->response = $client->post($fullUrl, [
-			'form_params' => [
-				'groupid' => $user
-			]
-		]);
+		$options['body'] = [
+							'userid' => $user,
+							'password' => '123456'
+							];
+
+		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+
+	}
+
+	/**
+	 * @When /^creating the group "([^"]*)"$/
+	 */
+	public function creatingTheGroup($group) {
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/groups";
+		$client = new Client();
+		$options = [];
+		if ($this->currentUser === 'admin') {
+			$options['auth'] = $this->adminUser;
+		}
+
+		$options['body'] = [
+							'groupid' => $group,
+							];
+
+		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+	}
+
+	/**
+	 * @When /^Deleting the user "([^"]*)"$/
+	 */
+	public function deletingTheUser($user) {
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user";
+		$client = new Client();
+		$options = [];
+		if ($this->currentUser === 'admin') {
+			$options['auth'] = $this->adminUser;
+		}
+
+		$this->response = $client->send($client->createRequest("DELETE", $fullUrl, $options));
+	}
+
+	/**
+	 * @When /^Deleting the group "([^"]*)"$/
+	 */
+	public function deletingTheGroup($group) {
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/groups/$group";
+		$client = new Client();
+		$options = [];
+		if ($this->currentUser === 'admin') {
+			$options['auth'] = $this->adminUser;
+		}
+
+		$this->response = $client->send($client->createRequest("DELETE", $fullUrl, $options));
 	}
 
 	/**
