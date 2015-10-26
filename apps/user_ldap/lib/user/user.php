@@ -87,15 +87,15 @@ class User {
 
 	/**
 	 * @brief constructor, make sure the subclasses call this one!
-	 * @param string the internal username
-	 * @param string the LDAP DN
+	 * @param string $username the internal username
+	 * @param string $dn the LDAP DN
 	 * @param IUserTools $access an instance that implements IUserTools for
 	 * LDAP interaction
-	 * @param \OCP\IConfig
-	 * @param FilesystemHelper
-	 * @param \OCP\Image any empty instance
-	 * @param LogWrapper
-	 * @param \OCP\IAvatarManager
+	 * @param \OCP\IConfig $config
+	 * @param FilesystemHelper $fs
+	 * @param \OCP\Image $image any empty instance
+	 * @param LogWrapper $log
+	 * @param \OCP\IAvatarManager $avatarManager
 	 */
 	public function __construct($username, $dn, IUserTools $access,
 		\OCP\IConfig $config, FilesystemHelper $fs, \OCP\Image $image,
@@ -147,21 +147,21 @@ class User {
 		//Quota
 		$attr = strtolower($this->connection->ldapQuotaAttribute);
 		if(isset($ldapEntry[$attr])) {
-			$this->updateQuota($ldapEntry[$attr]);
+			$this->updateQuota($ldapEntry[$attr][0]);
 		}
 		unset($attr);
 
 		//Email
 		$attr = strtolower($this->connection->ldapEmailAttribute);
 		if(isset($ldapEntry[$attr])) {
-			$this->updateEmail($ldapEntry[$attr]);
+			$this->updateEmail($ldapEntry[$attr][0]);
 		}
 		unset($attr);
 
 		//displayName
 		$attr = strtolower($this->connection->ldapUserDisplayName);
 		if(isset($ldapEntry[$attr])) {
-			$displayName = $ldapEntry[$attr];
+			$displayName = $ldapEntry[$attr][0];
 			if(!empty($displayName)) {
 				$this->storeDisplayName($displayName);
 				$this->access->cacheUserDisplayName($this->getUsername(), $displayName);
@@ -171,18 +171,20 @@ class User {
 
 		// LDAP Username, needed for s2s sharing
 		if(isset($ldapEntry['uid'])) {
-			$this->storeLDAPUserName($ldapEntry['uid']);
+			$this->storeLDAPUserName($ldapEntry['uid'][0]);
 		} else if(isset($ldapEntry['samaccountname'])) {
-			$this->storeLDAPUserName($ldapEntry['samaccountname']);
+			$this->storeLDAPUserName($ldapEntry['samaccountname'][0]);
 		}
+
 		//homePath
 		if(strpos($this->connection->homeFolderNamingRule, 'attr:') === 0) {
 			$attr = strtolower(substr($this->connection->homeFolderNamingRule, strlen('attr:')));
 			if(isset($ldapEntry[$attr])) {
 				$this->access->cacheUserHome(
-					$this->getUsername(), $this->getHomePath($ldapEntry[$attr]));
+					$this->getUsername(), $this->getHomePath($ldapEntry[$attr][0]));
 			}
 		}
+
 		//memberOf groups
 		$cacheKey = 'getMemberOf'.$this->getUsername();
 		$groups = false;
@@ -190,11 +192,12 @@ class User {
 			$groups = $ldapEntry['memberof'];
 		}
 		$this->connection->writeToCache($cacheKey, $groups);
+
 		//Avatar
 		$attrs = array('jpegphoto', 'thumbnailphoto');
 		foreach ($attrs as $attr)  {
 			if(isset($ldapEntry[$attr])) {
-				$this->avatarImage = $ldapEntry[$attr];
+				$this->avatarImage = $ldapEntry[$attr][0];
 				$this->updateAvatar();
 				break;
 			}
@@ -365,7 +368,7 @@ class User {
 	 * @brief checks whether an update method specified by feature was run
 	 * already. If not, it will marked like this, because it is expected that
 	 * the method will be run, when false is returned.
-	 * @param string email | quota | avatar (can be extended)
+	 * @param string $feature email | quota | avatar (can be extended)
 	 * @return bool
 	 */
 	private function wasRefreshed($feature) {

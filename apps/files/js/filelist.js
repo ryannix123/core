@@ -226,7 +226,11 @@
 			}
 			this.breadcrumb = new OCA.Files.BreadCrumb(breadcrumbOptions);
 
-			this.$el.find('#controls').prepend(this.breadcrumb.$el);
+			var $controls = this.$el.find('#controls');
+			if ($controls.length > 0) {
+				$controls.prepend(this.breadcrumb.$el);
+				this.$table.addClass('has-controls');
+			}
 
 			this._renderNewButton();
 
@@ -386,12 +390,15 @@
 		 * Update the details view to display the given file
 		 *
 		 * @param {string} fileName file name from the current list
+		 * @param {boolean} [show=true] whether to open the sidebar if it was closed
 		 */
-		_updateDetailsView: function(fileName) {
+		_updateDetailsView: function(fileName, show) {
 			if (!this._detailsView) {
 				return;
 			}
 
+			// show defaults to true
+			show = _.isUndefined(show) || !!show;
 			var oldFileInfo = this._detailsView.getFileInfo();
 			if (oldFileInfo) {
 				// TODO: use more efficient way, maybe track the highlight
@@ -409,7 +416,7 @@
 				return;
 			}
 
-			if (this._detailsView.$el.hasClass('disappear')) {
+			if (show && this._detailsView.$el.hasClass('disappear')) {
 				OC.Apps.showAppSidebar(this._detailsView.$el);
 			}
 
@@ -1350,7 +1357,7 @@
 				) {
 					OC.redirect(OC.generateUrl('apps/files'));
 				}
-				OC.Notification.show(result.data.message);
+				OC.Notification.showTemporary(result.data.message);
 				return false;
 			}
 
@@ -1358,7 +1365,7 @@
 			if (result.status === 403) {
 				// Go home
 				this.changeDirectory('/');
-				OC.Notification.show(t('files', 'This operation is forbidden'));
+				OC.Notification.showTemporary(t('files', 'This operation is forbidden'));
 				return false;
 			}
 
@@ -1366,7 +1373,7 @@
 			if (result.status === 500) {
 				// Go home
 				this.changeDirectory('/');
-				OC.Notification.show(t('files', 'This directory is unavailable, please check the logs or contact the administrator'));
+				OC.Notification.showTemporary(t('files', 'This directory is unavailable, please check the logs or contact the administrator'));
 				return false;
 			}
 
@@ -1640,15 +1647,11 @@
 							} else {
 								OC.Notification.hide();
 								if (result.status === 'error' && result.data.message) {
-									OC.Notification.show(result.data.message);
+									OC.Notification.showTemporary(result.data.message);
 								}
 								else {
-									OC.Notification.show(t('files', 'Error moving file.'));
+									OC.Notification.showTemporary(t('files', 'Error moving file.'));
 								}
-								// hide notification after 10 sec
-								setTimeout(function() {
-									OC.Notification.hide();
-								}, 10000);
 							}
 						} else {
 							OC.dialogs.alert(t('files', 'Error moving file'), t('files', 'Error'));
@@ -1771,7 +1774,7 @@
 								tr.remove();
 								tr = self.add(fileInfo, {updateSummary: false, silent: true});
 								self.$fileList.trigger($.Event('fileActionsReady', {fileList: self, $files: $(tr)}));
-								self._updateDetailsView(fileInfo.name);
+								self._updateDetailsView(fileInfo.name, false);
 							}
 						});
 					} else {
@@ -2011,17 +2014,15 @@
 							self.fileSummary.update();
 							self.updateSelectionSummary();
 							self.updateStorageStatistics();
+							// in case there was a "storage full" permanent notification
+							OC.Notification.hide();
 						} else {
 							if (result.status === 'error' && result.data.message) {
-								OC.Notification.show(result.data.message);
+								OC.Notification.showTemporary(result.data.message);
 							}
 							else {
-								OC.Notification.show(t('files', 'Error deleting file.'));
+								OC.Notification.showTemporary(t('files', 'Error deleting file.'));
 							}
-							// hide notification after 10 sec
-							setTimeout(function() {
-								OC.Notification.hide();
-							}, 10000);
 							if (params.allfiles) {
 								// reload the page as we don't know what files were deleted
 								// and which ones remain
@@ -2262,11 +2263,7 @@
 		 */
 		_showPermissionDeniedNotification: function() {
 			var message = t('core', 'You don’t have permission to upload or create files here');
-			OC.Notification.show(message);
-			//hide notification after 10 sec
-			setTimeout(function() {
-				OC.Notification.hide();
-			}, 5000);
+			OC.Notification.showTemporary(message);
 		},
 
 		/**
@@ -2620,14 +2617,18 @@
 		 * Register a tab view to be added to all views
 		 */
 		registerTabView: function(tabView) {
-			this._detailsView.addTabView(tabView);
+			if (this._detailsView) {
+				this._detailsView.addTabView(tabView);
+			}
 		},
 
 		/**
 		 * Register a detail view to be added to all views
 		 */
 		registerDetailView: function(detailView) {
-			this._detailsView.addDetailView(detailView);
+			if (this._detailsView) {
+				this._detailsView.addDetailView(detailView);
+			}
 		}
 	};
 

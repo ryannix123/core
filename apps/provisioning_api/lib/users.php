@@ -29,6 +29,7 @@ namespace OCA\Provisioning_API;
 use \OC_OCS_Result;
 use \OC_SubAdmin;
 use \OC_Helper;
+use \OC_Group;
 use OCP\Files\NotFoundException;
 
 class Users {
@@ -71,7 +72,31 @@ class Users {
 		$limit = !empty($_GET['limit']) ? $_GET['limit'] : null;
 		$offset = !empty($_GET['offset']) ? $_GET['offset'] : null;
 
-		$users = $this->userManager->search($search, $limit, $offset);
+		// Check if user is logged in
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new OC_OCS_Result(null, \OCP\API::RESPOND_UNAUTHORISED);
+		}
+
+		// Admin? Or SubAdmin?
+		if($this->groupManager->isAdmin($user->getUID())){
+			$users = $this->userManager->search($search, $limit, $offset);
+		} else if (\OC_SubAdmin::isSubAdmin($user->getUID())) {
+			$subAdminOfGroups = \OC_SubAdmin::getSubAdminsGroups($user->getUID());
+
+			if($offset === null) {
+				$offset = 0; 
+			}
+
+			$users = [];
+			foreach ($subAdminOfGroups as $group) {
+				$users = array_merge($users, $this->groupManager->displayNamesInGroup($group, $search));
+			}
+
+			$users = array_slice($users, $offset, $limit);
+		} else {
+			return new OC_OCS_Result(null, \OCP\API::RESPOND_UNAUTHORISED);
+		}
 		$users = array_keys($users);
 
 		return new OC_OCS_Result([
@@ -115,46 +140,28 @@ class Users {
 			return new OC_OCS_Result(null, \OCP\API::RESPOND_UNAUTHORISED);
 		}
 
+		$data = [];
+
 		// Admin? Or SubAdmin?
 		if($this->groupManager->isAdmin($user->getUID()) || OC_SubAdmin::isUserAccessible($user->getUID(), $userId)) {
 			// Check they exist
 			if(!$this->userManager->userExists($userId)) {
 				return new OC_OCS_Result(null, \OCP\API::RESPOND_NOT_FOUND, 'The requested user could not be found');
 			}
-			// Show all
-			$return = [
-				'email',
-				'enabled',
-			];
-			if($user->getUID() !== $userId) {
-				$return[] = 'quota';
-			}
+			$data['enabled'] = $this->config->getUserValue($userId, 'core', 'enabled', 'true');
 		} else {
 			// Check they are looking up themselves
 			if($user->getUID() !== $userId) {
 				return new OC_OCS_Result(null, \OCP\API::RESPOND_UNAUTHORISED);
 			}
-			// Return some additional information compared to the core route
-			$return = array(
-				'email',
-				'displayname',
-				);
 		}
 
 		// Find the data
-		$data = [];
-		$data = self::fillStorageInfo($userId, $data);
-		$data['enabled'] = $this->config->getUserValue($userId, 'core', 'enabled', 'true');
+		$data['quota'] = self::fillStorageInfo($userId);
 		$data['email'] = $this->config->getUserValue($userId, 'settings', 'email');
-		$data['displayname'] = $this->userManager->get($parameters['userid'])->getDisplayName();
+		$data['displayname'] = $this->userManager->get($userId)->getDisplayName();
 
-		// Return the appropriate data
-		$responseData = array();
-		foreach($return as $key) {
-			$responseData[$key] = $data[$key];
-		}
-
-		return new OC_OCS_Result($responseData);
+		return new OC_OCS_Result($data);
 	}
 
 	/** 
@@ -473,19 +480,20 @@ class Users {
 	 * @return mixed
 	 * @throws \OCP\Files\NotFoundException
 	 */
-	private static function fillStorageInfo($userId, $data) {
+	private static function fillStorageInfo($userId) {
+		$data = [];
 		try {
 			\OC_Util::tearDownFS();
 			\OC_Util::setupFS($userId);
 			$storage = OC_Helper::getStorageInfo('/');
-			$data['quota'] = [
+			$data = [
 				'free' => $storage['free'],
 				'used' => $storage['used'],
 				'total' => $storage['total'],
 				'relative' => $storage['relative'],
 			];
 		} catch (NotFoundException $ex) {
-			$data['quota'] = [];
+			$data = [];
 		}
 		return $data;
 	}

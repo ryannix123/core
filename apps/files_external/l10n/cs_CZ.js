@@ -10,7 +10,12 @@ OC.L10N.register(
     "Storage with id \"%i\" not found" : "Úložiště s id \"%i\" nebylo nalezeno",
     "Invalid backend or authentication mechanism class" : "Neplatný backend nebo třída ověřovacího mechanismu",
     "Invalid mount point" : "Neplatný přípojný bod",
+    "Objectstore forbidden" : "Úložiště objektů zakázáno",
     "Invalid storage backend \"%s\"" : "Neplatná služba úložiště \"%s\"",
+    "Not permitted to use backend \"%s\"" : "Nebylo povoleno použítí služby \"%s\"",
+    "Not permitted to use authentication mechanism \"%s\"" : "Nebylo povoleno použití ověřovacího mechanismu \"%s\"",
+    "Unsatisfied backend parameters" : "Neuspokojivé parametry služby",
+    "Unsatisfied authentication mechanism parameters" : "Neuspokojivé parametry ověřovacího mechanismu",
     "Personal" : "Osobní",
     "System" : "Systém",
     "Grant access" : "Povolit přístup",
@@ -94,7 +99,7 @@ OC.L10N.register(
     "Advanced settings" : "Pokročilá nastavení",
     "Delete" : "Smazat",
     "Add storage" : "Přidat úložiště",
-    "Enable User External Storage" : "Zapnout externí uživatelské úložiště",
+    "Allow users to mount external storages" : "Povolit uživatelům připojení externích úložišť",
     "Allow users to mount the following external storage" : "Povolit uživatelů připojit následující externí úložiště"
 },
 "nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;");

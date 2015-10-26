@@ -35,7 +35,6 @@
 	height: 100%;
 	width: inherit;
 	overflow: auto;
-	padding-bottom: 44px;
 	-moz-box-sizing: border-box; box-sizing: border-box;
 }
 #app-navigation li {
@@ -308,8 +307,13 @@
 	-o-filter: drop-shadow(0 0 5px rgba(150, 150, 150, 0.75));
 	filter: drop-shadow(0 0 5px rgba(150, 150, 150, 0.75));
 }
-.ie8 .bubble {
+.ie .bubble,
+.ie #app-navigation .app-navigation-entry-menu,
+.ie .bubble:after,
+.ie #app-navigation .app-navigation-entry-menu:after {
 	border: 1px solid #eee;
+}
+.ie8 .bubble {
 	margin-top: 18px;
 }
 .ie8 .bubble:after {
@@ -691,6 +695,7 @@ em {
 .popovermenu .menuitem .no-icon {
 	display: inline-block;
 	width: 16px;
+	height: 16px;
 	margin-right: 10px;
 }
 

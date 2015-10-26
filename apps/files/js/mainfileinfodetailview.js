@@ -15,9 +15,8 @@
 		'<div class="fileName"><h3 title="{{name}}" class="ellipsis">{{name}}</h3></div>' +
 		'	<div class="file-details ellipsis">' +
 		'		<a href="#" ' +
-		'		alt="{{starAltText}}"' +
 		'		class="action action-favorite favorite">' +
-		'			<img class="svg" src="{{starIcon}}" />' +
+		'			<img class="svg" alt="{{starAltText}}" src="{{starIcon}}" />' +
 		'		</a>' +
 		'		{{#if hasSize}}<span class="size" title="{{altSize}}">{{size}}</span>, {{/if}}<span class="date" title="{{altDate}}">{{date}}</span>' +
 		'	</div>' +
@@ -66,10 +65,10 @@
 			this._fileList = options.fileList;
 			this._fileActions = options.fileActions;
 			if (!this._fileList) {
-				throw 'Missing requird parameter "fileList"';
+				throw 'Missing required parameter "fileList"';
 			}
 			if (!this._fileActions) {
-				throw 'Missing requird parameter "fileActions"';
+				throw 'Missing required parameter "fileActions"';
 			}
 		},
 

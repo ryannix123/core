@@ -1,9 +1,9 @@
 {
-  "core-version": "8.1.0.0",
   "shippedApps": [
     "activity",
     "admin_audit",
     "encryption",
+    "dav",
     "enterprise_key",
     "external",
     "files",

@@ -171,7 +171,6 @@ var OCdialogs = {
 
 			$('body').append(self.$filePicker);
 
-
 			self.$filePicker.ready(function() {
 				self.$filelist = self.$filePicker.find('.filelist');
 				self.$dirTree = self.$filePicker.find('.dirtree');
@@ -601,6 +600,14 @@ var OCdialogs = {
 
 				$(dialogId).css('height','auto');
 
+				var $primaryButton = $dlg.closest('.oc-dialog').find('button.continue');
+				$primaryButton.prop('disabled', true);
+
+				function updatePrimaryButton() {
+					var checkedCount = $dlg.find('.conflicts .checkbox:checked').length;
+					$primaryButton.prop('disabled', checkedCount === 0);
+				}
+
 				//add checkbox toggling actions
 				$(dialogId).find('.allnewfiles').on('click', function() {
 					var $checkboxes = $(dialogId).find('.conflict .replacement input[type="checkbox"]');
@@ -632,6 +639,7 @@ var OCdialogs = {
 						$(dialogId).find('.allnewfiles').prop('checked', false);
 						$(dialogId).find('.allnewfiles + .count').text('');
 					}
+					updatePrimaryButton();
 				});
 				$(dialogId).on('click', '.original,.allexistingfiles', function(){
 					var count = $(dialogId).find('.conflict .original input[type="checkbox"]:checked').length;
@@ -646,7 +654,9 @@ var OCdialogs = {
 						$(dialogId).find('.allexistingfiles').prop('checked', false);
 						$(dialogId).find('.allexistingfiles + .count').text('');
 					}
+					updatePrimaryButton();
 				});
+
 				dialogDeferred.resolve();
 			})
 			.fail(function() {
@@ -727,9 +737,10 @@ var OCdialogs = {
 		var dirs = [];
 		var others = [];
 		var self = this;
-		this.$filelist.empty().addClass('loading');
+		this.$filelist.empty().addClass('icon-loading');
 		this.$filePicker.data('path', dir);
 		$.when(this._getFileList(dir, this.$filePicker.data('mimetype'))).then(function(response) {
+
 			$.each(response.data.files, function(index, file) {
 				if (file.type === 'dir') {
 					dirs.push(file);
@@ -761,7 +772,7 @@ var OCdialogs = {
 				self.$filelist.append($li);
 			});
 
-			self.$filelist.removeClass('loading');
+			self.$filelist.removeClass('icon-loading');
 			if (!OC.Util.hasSVGSupport()) {
 				OC.Util.replaceSVG(self.$filePicker.find('.dirtree'));
 			}

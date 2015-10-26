@@ -25,6 +25,7 @@
 namespace OCA\Files_Sharing\API;
 
 use OCA\Files_Sharing\Activity;
+use OCP\Files\NotFoundException;
 
 class Server2Server {
 
@@ -53,6 +54,7 @@ class Server2Server {
 				return new \OC_OCS_Result(null, 400, 'The mountpoint name contains invalid characters.');
 			}
 
+			// FIXME this should be a method in the user management instead
 			\OCP\Util::writeLog('files_sharing', 'shareWith before, ' . $shareWith, \OCP\Util::DEBUG);
 			\OCP\Util::emitHook(
 				'\OCA\Files_Sharing\API\Server2Server',
@@ -263,7 +265,11 @@ class Server2Server {
 	private function getFile($user, $fileSource) {
 		\OC_Util::setupFS($user);
 
-		$file = \OC\Files\Filesystem::getPath($fileSource);
+		try {
+			$file = \OC\Files\Filesystem::getPath($fileSource);
+		} catch (NotFoundException $e) {
+			$file = null;
+		}
 		$args = \OC\Files\Filesystem::is_dir($file) ? array('dir' => $file) : array('dir' => dirname($file), 'scrollto' => $file);
 		$link = \OCP\Util::linkToAbsolute('files', 'index.php', $args);
 

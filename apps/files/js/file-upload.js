@@ -18,7 +18,7 @@
  *    - TODO music upload button
  */
 
-/* global jQuery, oc_requesttoken, humanFileSize */
+/* global jQuery, oc_requesttoken, humanFileSize, FileList */
 
 /**
  * Function that will allow us to know if Ajax uploads are supported
@@ -45,6 +45,26 @@ function supportAjaxUploadWithProgress() {
 	function supportFormData() {
 		return !! window.FormData;
 	}
+}
+
+/**
+ * Add form data into the given form data
+ *
+ * @param {Array|Object} formData form data which can either be an array or an object
+ * @param {Object} newData key-values to add to the form data
+ *
+ * @return updated form data
+ */
+function addFormData(formData, newData) {
+	// in IE8, formData is an array instead of object
+	if (_.isArray(formData)) {
+		_.each(newData, function(value, key) {
+			formData.push({name: key, value: value});
+		});
+	} else {
+		formData = _.extend(formData, newData);
+	}
+	return formData;
 }
 
 /**
@@ -75,6 +95,9 @@ OC.Upload = {
 			this._uploads.push(jqXHR);
 		}
 	},
+	showUploadCancelMessage: _.debounce(function() {
+		OC.Notification.showTemporary(t('files', 'Upload cancelled.'), {timeout: 10});
+	}, 500),
 	/**
 	 * Checks the currently known uploads.
 	 * returns true if any hxr has the state 'pending'
@@ -140,9 +163,9 @@ OC.Upload = {
 			data.data.append('resolution', 'replace');
 		} else {
 			if (!data.formData) {
-				data.formData = [];
+				data.formData = {};
 			}
-			data.formData.push({name:'resolution', value:'replace'}); //hack for ie8
+			addFormData(data.formData, {resolution: 'replace'});
 		}
 		data.submit();
 	},
@@ -156,9 +179,9 @@ OC.Upload = {
 			data.data.append('resolution', 'autorename');
 		} else {
 			if (!data.formData) {
-				data.formData = [];
+				data.formData = {};
 			}
-			data.formData.push({name:'resolution', value:'autorename'}); //hack for ie8
+			addFormData(data.formData, {resolution: 'autorename'});
 		}
 		data.submit();
 	},
@@ -182,7 +205,7 @@ OC.Upload = {
 	 * @param {function} callbacks.onCancel
 	 */
 	checkExistingFiles: function (selection, callbacks) {
-		var fileList = OCA.Files.App.fileList;
+		var fileList = FileList;
 		var conflicts = [];
 		// only keep non-conflicting uploads
 		selection.uploads = _.filter(selection.uploads, function(upload) {
@@ -399,26 +422,28 @@ OC.Upload = {
 				submit: function(e, data) {
 					OC.Upload.rememberUpload(data);
 					if (!data.formData) {
-						data.formData = [];
+						data.formData = {};
 					}
 
 					var fileDirectory = '';
 					if(typeof data.files[0].relativePath !== 'undefined') {
 						fileDirectory = data.files[0].relativePath;
 					}
-					// FIXME: prevent re-adding the same
-					data.formData.push({name: 'requesttoken', value: oc_requesttoken});
-					data.formData.push({name: 'dir', value: data.targetDir || FileList.getCurrentDirectory()});
-					data.formData.push({name: 'file_directory', value: fileDirectory});
+
+					addFormData(data.formData, {
+						requesttoken: oc_requesttoken,
+						dir: data.targetDir || FileList.getCurrentDirectory(),
+						file_directory: fileDirectory
+					});
 				},
 				fail: function(e, data) {
 					OC.Upload.log('fail', e, data);
 					if (typeof data.textStatus !== 'undefined' && data.textStatus !== 'success' ) {
 						if (data.textStatus === 'abort') {
-							OC.Notification.show(t('files', 'Upload cancelled.'));
+							OC.Upload.showUploadCancelMessage();
 						} else {
 							// HTTP connection problem
-							OC.Notification.show(data.errorThrown);
+							OC.Notification.showTemporary(data.errorThrown, {timeout: 10});
 							if (data.result) {
 								var result = JSON.parse(data.result);
 								if (result && result[0] && result[0].data && result[0].data.code === 'targetnotfound') {
@@ -427,10 +452,6 @@ OC.Upload = {
 								}
 							}
 						}
-						//hide notification after 10 sec
-						setTimeout(function() {
-							OC.Notification.hide();
-						}, 10000);
 					}
 					OC.Upload.deleteUpload(data);
 				},

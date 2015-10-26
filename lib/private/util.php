@@ -1093,7 +1093,7 @@ class OC_Util {
 		return $id;
 	}
 
-	protected static $encryptedToken;
+	protected static $obfuscatedToken;
 	/**
 	 * Register an get/post call. Important to prevent CSRF attacks.
 	 *
@@ -1107,24 +1107,27 @@ class OC_Util {
 	 */
 	public static function callRegister() {
 		// Use existing token if function has already been called
-		if(isset(self::$encryptedToken)) {
-			return self::$encryptedToken;
+		if(isset(self::$obfuscatedToken)) {
+			return self::$obfuscatedToken;
 		}
+
+		$tokenLength = 30;
 
 		// Check if a token exists
 		if (!\OC::$server->getSession()->exists('requesttoken')) {
 			// No valid token found, generate a new one.
-			$requestToken = \OC::$server->getSecureRandom()->getMediumStrengthGenerator()->generate(30);
+			$requestToken = \OC::$server->getSecureRandom()->getMediumStrengthGenerator()->generate($tokenLength);
 			\OC::$server->getSession()->set('requesttoken', $requestToken);
 		} else {
 			// Valid token already exists, send it
 			$requestToken = \OC::$server->getSession()->get('requesttoken');
 		}
 
-		// Encrypt the token to mitigate breach-like attacks
-		$sharedSecret = \OC::$server->getSecureRandom()->getMediumStrengthGenerator()->generate(10);
-		self::$encryptedToken = \OC::$server->getCrypto()->encrypt($requestToken, $sharedSecret) . ':' . $sharedSecret;
-		return self::$encryptedToken;
+		// XOR the token to mitigate breach-like attacks
+		$sharedSecret = \OC::$server->getSecureRandom()->getMediumStrengthGenerator()->generate($tokenLength);
+		self::$obfuscatedToken =  base64_encode($requestToken ^ $sharedSecret) .':'.$sharedSecret;
+
+		return self::$obfuscatedToken;
 	}
 
 	/**
@@ -1300,12 +1303,11 @@ class OC_Util {
 	/**
 	 * Get URL content
 	 * @param string $url Url to get content
-	 * @deprecated Use \OC::$server->getHTTPHelper()->getUrlContent($url);
 	 * @throws Exception If the URL does not start with http:// or https://
 	 * @return string of the response or false on error
 	 * This function get the content of a page via curl, if curl is enabled.
 	 * If not, file_get_contents is used.
-	 * @deprecated Use \OCP\Http\Client\IClientService
+	 * @deprecated Use \OC::$server->getHTTPClientService()->newClient()->get($url);
 	 */
 	public static function getUrlContent($url) {
 		try {

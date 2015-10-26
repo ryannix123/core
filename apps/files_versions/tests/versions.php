@@ -301,10 +301,9 @@ class Test_Files_Versioning extends \Test\TestCase {
 		// execute rename hook of versions app
 		\OC\Files\Filesystem::rename('/folder1/test.txt', '/folder1/folder2/test.txt');
 
-
-		self::loginHelper(self::TEST_VERSIONS_USER2);
-
 		$this->runCommands();
+
+		self::loginHelper(self::TEST_VERSIONS_USER);
 
 		$this->assertFalse($this->rootView->file_exists($v1));
 		$this->assertFalse($this->rootView->file_exists($v2));
@@ -760,7 +759,11 @@ class Test_Files_Versioning extends \Test\TestCase {
 		);
 	}
 
-	private function createAndCheckVersions($view, $path) {
+	/**
+	 * @param \OC\Files\View $view
+	 * @param string $path
+	 */
+	private function createAndCheckVersions(\OC\Files\View $view, $path) {
 		$view->file_put_contents($path, 'test file');
 		$view->file_put_contents($path, 'version 1');
 		$view->file_put_contents($path, 'version 2');
@@ -783,7 +786,6 @@ class Test_Files_Versioning extends \Test\TestCase {
 	/**
 	 * @param string $user
 	 * @param bool $create
-	 * @param bool $password
 	 */
 	public static function loginHelper($user, $create = false) {
 

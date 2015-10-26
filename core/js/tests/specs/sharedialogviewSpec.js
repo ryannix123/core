@@ -80,6 +80,9 @@ describe('OC.Share.ShareDialogView', function() {
 			model: shareModel
 		});
 
+		// required for proper event propagation when simulating clicks in some cases (jquery bugs)
+		$('#testArea').append(dialog.$el);
+
 		// triggers rendering
 		shareModel.set({
 			shares: [],
@@ -111,6 +114,7 @@ describe('OC.Share.ShareDialogView', function() {
 		/* jshint camelcase:false */
 		oc_appconfig.core = oldAppConfig;
 
+		dialog.remove();
 		fetchStub.restore();
 
 		autocompleteStub.restore();
@@ -127,7 +131,7 @@ describe('OC.Share.ShareDialogView', function() {
 			dialog.render();
 
 			// Toggle linkshare
-			dialog.$el.find('[name=linkCheckbox]').click();
+			dialog.$el.find('.linkCheckbox').click();
 			fakeServer.requests[0].respond(
 				200,
 				{ 'Content-Type': 'application/json' },
@@ -136,9 +140,9 @@ describe('OC.Share.ShareDialogView', function() {
 
 			// Enable password, enter password and focusout
 			dialog.$el.find('[name=showPassword]').click();
-			dialog.$el.find('#linkPassText').focus();
-			dialog.$el.find('#linkPassText').val('foo');
-			dialog.$el.find('#linkPassText').focusout();
+			dialog.$el.find('.linkPassText').focus();
+			dialog.$el.find('.linkPassText').val('foo');
+			dialog.$el.find('.linkPassText').focusout();
 
 			expect(fakeServer.requests[1].method).toEqual('POST');
 			var body = OC.parseQueryString(fakeServer.requests[1].requestBody);
@@ -157,8 +161,8 @@ describe('OC.Share.ShareDialogView', function() {
 			// fetching the model will rerender the view
 			dialog.render();
 
-			expect(dialog.$el.find('#linkPassText').val()).toEqual('');
-			expect(dialog.$el.find('#linkPassText').attr('placeholder')).toEqual('**********');
+			expect(dialog.$el.find('.linkPassText').val()).toEqual('');
+			expect(dialog.$el.find('.linkPassText').attr('placeholder')).toEqual('**********');
 		});
 		it('update password on enter', function() {
 			$('#allowShareWithLink').val('yes');
@@ -166,7 +170,7 @@ describe('OC.Share.ShareDialogView', function() {
 			dialog.render();
 
 			// Toggle linkshare
-			dialog.$el.find('[name=linkCheckbox]').click();
+			dialog.$el.find('.linkCheckbox').click();
 			fakeServer.requests[0].respond(
 				200,
 				{ 'Content-Type': 'application/json' },
@@ -175,9 +179,9 @@ describe('OC.Share.ShareDialogView', function() {
 
 			// Enable password and enter password
 			dialog.$el.find('[name=showPassword]').click();
-			dialog.$el.find('#linkPassText').focus();
-			dialog.$el.find('#linkPassText').val('foo');
-			dialog.$el.find('#linkPassText').trigger(new $.Event('keyup', {keyCode: 13}));
+			dialog.$el.find('.linkPassText').focus();
+			dialog.$el.find('.linkPassText').val('foo');
+			dialog.$el.find('.linkPassText').trigger(new $.Event('keyup', {keyCode: 13}));
 
 			expect(fakeServer.requests[1].method).toEqual('POST');
 			var body = OC.parseQueryString(fakeServer.requests[1].requestBody);
@@ -196,22 +200,22 @@ describe('OC.Share.ShareDialogView', function() {
 			// fetching the model will rerender the view
 			dialog.render();
 
-			expect(dialog.$el.find('#linkPassText').val()).toEqual('');
-			expect(dialog.$el.find('#linkPassText').attr('placeholder')).toEqual('**********');
+			expect(dialog.$el.find('.linkPassText').val()).toEqual('');
+			expect(dialog.$el.find('.linkPassText').attr('placeholder')).toEqual('**********');
 		});
 		it('shows share with link checkbox when allowed', function() {
 			$('#allowShareWithLink').val('yes');
 
 			dialog.render();
 
-			expect(dialog.$el.find('#linkCheckbox').length).toEqual(1);
+			expect(dialog.$el.find('.linkCheckbox').length).toEqual(1);
 		});
 		it('does not show share with link checkbox when not allowed', function() {
 			$('#allowShareWithLink').val('no');
 
 			dialog.render();
 
-			expect(dialog.$el.find('#linkCheckbox').length).toEqual(0);
+			expect(dialog.$el.find('.linkCheckbox').length).toEqual(0);
 		});
 		it('shows populated link share when a link share exists', function() {
 			// this is how the OC.Share class does it...
@@ -228,8 +232,8 @@ describe('OC.Share.ShareDialogView', function() {
 
 			dialog.render();
 
-			expect(dialog.$el.find('#linkCheckbox').prop('checked')).toEqual(true);
-			expect(dialog.$el.find('#linkText').val()).toEqual(link);
+			expect(dialog.$el.find('.linkCheckbox').prop('checked')).toEqual(true);
+			expect(dialog.$el.find('.linkText').val()).toEqual(link);
 		});
 		describe('password', function() {
 			var slideToggleStub;
@@ -250,7 +254,7 @@ describe('OC.Share.ShareDialogView', function() {
 				configModel.set('enforcePasswordForPublicLink', true);
 				dialog.render();
 
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 
 				// The password linkPass field is shown (slideToggle is called).
 				// No request is made yet
@@ -259,7 +263,7 @@ describe('OC.Share.ShareDialogView', function() {
 				expect(fakeServer.requests.length).toEqual(0);
 				
 				// Now untoggle share by link
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				dialog.render();
 
 				// Password field disappears and no ajax requests have been made
@@ -302,31 +306,31 @@ describe('OC.Share.ShareDialogView', function() {
 				dialog.render();
 
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(false);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('');
 			});
 			it('does not check expiration date checkbox for new share', function() {
 				dialog.render();
 
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(false);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('');
 			});
 			it('checks expiration date checkbox and populates field when expiration date was set', function() {
 				shareModel.get('linkShare').expiration = '2014-02-01 00:00:00';
 				dialog.render();
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(true);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('01-02-2014');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('01-02-2014');
 			});
 			it('sets default date when default date setting is enabled', function() {
 				configModel.set('isDefaultExpireDateEnabled', true);
 				dialog.render();
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				// here fetch would be called and the server returns the expiration date
 				shareModel.get('linkShare').expiration = '2014-1-27 00:00:00';
 				dialog.render();
 
 				// enabled by default
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(true);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('27-01-2014');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('27-01-2014');
 
 				// disabling is allowed
 				dialog.$el.find('[name=expirationCheckbox]').click();
@@ -338,13 +342,13 @@ describe('OC.Share.ShareDialogView', function() {
 					isDefaultExpireDateEnforced: true
 				});
 				dialog.render();
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				// here fetch would be called and the server returns the expiration date
 				shareModel.get('linkShare').expiration = '2014-1-27 00:00:00';
 				dialog.render();
 
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(true);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('27-01-2014');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('27-01-2014');
 
 				// disabling is not allowed
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('disabled')).toEqual(true);
@@ -358,14 +362,14 @@ describe('OC.Share.ShareDialogView', function() {
 					isDefaultExpireDateEnforced: true
 				});
 				dialog.render();
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				// here fetch would be called and the server returns the expiration date
 				shareModel.get('linkShare').expiration = '2014-1-27 00:00:00';
 				dialog.render();
 
 				//Enter password
-				dialog.$el.find('#linkPassText').val('foo');
-				dialog.$el.find('#linkPassText').trigger(new $.Event('keyup', {keyCode: 13}));
+				dialog.$el.find('.linkPassText').val('foo');
+				dialog.$el.find('.linkPassText').trigger(new $.Event('keyup', {keyCode: 13}));
 				fakeServer.requests[0].respond(
 					200,
 					{ 'Content-Type': 'application/json' },
@@ -373,26 +377,16 @@ describe('OC.Share.ShareDialogView', function() {
 				);
 
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(true);
-				expect(dialog.$el.find('#expirationDate').val()).toEqual('27-01-2014');
+				expect(dialog.$el.find('.datepicker').val()).toEqual('27-01-2014');
 
 				// disabling is not allowed
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('disabled')).toEqual(true);
 				dialog.$el.find('[name=expirationCheckbox]').click();
 				expect(dialog.$el.find('[name=expirationCheckbox]').prop('checked')).toEqual(true);
 			});
-			it('displayes email form when sending emails is enabled', function() {
-				$('input[name=mailPublicNotificationEnabled]').val('yes');
-				dialog.render();
-				expect(dialog.$('#emailPrivateLink').length).toEqual(1);
-			});
-			it('not renders email form when sending emails is disabled', function() {
-				$('input[name=mailPublicNotificationEnabled]').val('no');
-				dialog.render();
-				expect(dialog.$('#emailPrivateLink').length).toEqual(0);
-			});
 			it('sets picker minDate to today and no maxDate by default', function() {
 				dialog.render();
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				dialog.$el.find('[name=expirationCheckbox]').click();
 				expect($.datepicker._defaults.minDate).toEqual(expectedMinDate);
 				expect($.datepicker._defaults.maxDate).toEqual(null);
@@ -403,7 +397,7 @@ describe('OC.Share.ShareDialogView', function() {
 					isDefaultExpireDateEnforced: true
 				});
 				dialog.render();
-				dialog.$el.find('[name=linkCheckbox]').click();
+				dialog.$el.find('.linkCheckbox').click();
 				expect($.datepicker._defaults.minDate).toEqual(expectedMinDate);
 				expect($.datepicker._defaults.maxDate).toEqual(new Date(2014, 0, 27, 0, 0, 0, 0));
 			});
@@ -420,6 +414,76 @@ describe('OC.Share.ShareDialogView', function() {
 				dialog.render();
 				expect($.datepicker._defaults.minDate).toEqual(expectedMinDate);
 				expect($.datepicker._defaults.maxDate).toEqual(new Date(2014, 0, 27, 0, 0, 0, 0));
+			});
+		});
+		describe('send link by email', function() {
+			var sendEmailPrivateLinkStub;
+			var clock;
+
+			beforeEach(function() {
+				configModel.set({
+					isMailPublicNotificationEnabled: true
+				});
+
+				shareModel.set('linkShare', {
+					isLinkShare: true,
+					token: 'tehtoken',
+					permissions: OC.PERMISSION_READ,
+					expiration: null
+				});
+
+				sendEmailPrivateLinkStub = sinon.stub(dialog.model, "sendEmailPrivateLink");
+				clock = sinon.useFakeTimers();
+			});
+			afterEach(function() {
+				sendEmailPrivateLinkStub.restore();
+				clock.restore();
+			});
+
+			it('displayes form when sending emails is enabled', function() {
+				$('input[name=mailPublicNotificationEnabled]').val('yes');
+				dialog.render();
+				expect(dialog.$('.emailPrivateLinkForm').length).toEqual(1);
+			});
+			it('form not rendered when sending emails is disabled', function() {
+				$('input[name=mailPublicNotificationEnabled]').val('no');
+				dialog.render();
+				expect(dialog.$('.emailPrivateLinkForm').length).toEqual(0);
+			});
+			it('input cleared on success', function() {
+				var defer = $.Deferred();
+				sendEmailPrivateLinkStub.returns(defer.promise());
+
+				$('input[name=mailPublicNotificationEnabled]').val('yes');
+				dialog.render();
+
+				dialog.$el.find('.emailPrivateLinkForm .emailField').val('a@b.c');
+				dialog.$el.find('.emailPrivateLinkForm').trigger('submit');
+
+				expect(sendEmailPrivateLinkStub.callCount).toEqual(1);
+				expect(dialog.$el.find('.emailPrivateLinkForm .emailField').val()).toEqual('Sending ...');
+
+				defer.resolve();
+				expect(dialog.$el.find('.emailPrivateLinkForm .emailField').val()).toEqual('Email sent');
+
+				clock.tick(2000);
+				expect(dialog.$el.find('.emailPrivateLinkForm .emailField').val()).toEqual('');
+			});
+			it('input not cleared on failure', function() {
+				var defer = $.Deferred();
+				sendEmailPrivateLinkStub.returns(defer.promise());
+
+				$('input[name=mailPublicNotificationEnabled]').val('yes');
+				dialog.render();
+
+				dialog.$el.find('.emailPrivateLinkForm .emailField').val('a@b.c');
+				dialog.$el.find('.emailPrivateLinkForm').trigger('submit');
+
+				expect(sendEmailPrivateLinkStub.callCount).toEqual(1);
+				expect(dialog.$el.find('.emailPrivateLinkForm .emailField').val()).toEqual('Sending ...');
+
+				defer.reject();
+				expect(dialog.$el.find('.emailPrivateLinkForm .emailField').val()).toEqual('a@b.c');
 			});
 		});
 	});
@@ -472,7 +536,7 @@ describe('OC.Share.ShareDialogView', function() {
 			it('test correct function calls', function() {
 				expect(avatarStub.calledTwice).toEqual(true);
 				expect(placeholderStub.calledTwice).toEqual(true);
-				expect(dialog.$('#shareWithList').children().length).toEqual(3);
+				expect(dialog.$('.shareWithList').children().length).toEqual(3);
 				expect(dialog.$('.avatar').length).toEqual(4);
 			});
 
@@ -586,7 +650,7 @@ describe('OC.Share.ShareDialogView', function() {
 					permissions: OC.PERMISSION_READ
 				});
 				dialog.render();
-				expect(dialog.$el.find('#shareWith').prop('disabled')).toEqual(true);
+				expect(dialog.$el.find('.shareWithField').prop('disabled')).toEqual(true);
 			});
 			it('shows reshare owner', function() {
 				shareModel.set({
@@ -609,6 +673,84 @@ describe('OC.Share.ShareDialogView', function() {
 				});
 				dialog.render();
 				expect(dialog.$el.find('.resharerInfoView .reshare').length).toEqual(0);
+			});
+		});
+	});
+	describe('remote sharing', function() {
+		it('shows remote share info when allows', function() {
+			configModel.set({
+				isRemoteShareAllowed: true
+			});
+			dialog.render();
+			expect(dialog.$el.find('.shareWithRemoteInfo').length).toEqual(1);
+		});
+		it('does not show remote share info when not allowed', function() {
+			configModel.set({
+				isRemoteShareAllowed: false
+			});
+			dialog.render();
+			expect(dialog.$el.find('.shareWithRemoteInfo').length).toEqual(0);
+		});
+	});
+	describe('autocompeltion of users', function() {
+		it('triggers autocomplete display and focus with data when ajax search succeeds', function () {
+			dialog.render();
+			var response = sinon.stub();
+			dialog.autocompleteHandler({term: 'bob'}, response);
+			var jsonData = JSON.stringify({
+				"data": [{"label": "bob", "value": {"shareType": 0, "shareWith": "test"}}],
+				"status": "success"
+			});
+			fakeServer.requests[0].respond(
+					200,
+					{'Content-Type': 'application/json'},
+					jsonData
+			);
+			expect(response.calledWithExactly(JSON.parse(jsonData).data)).toEqual(true);
+			expect(autocompleteStub.calledWith("option", "autoFocus", true)).toEqual(true);
+		});
+
+		it('gracefully handles successful ajax call with failure content', function () {
+			dialog.render();
+			var response = sinon.stub();
+			dialog.autocompleteHandler({term: 'bob'}, response);
+			var jsonData = JSON.stringify({"status": "failure"});
+			fakeServer.requests[0].respond(
+					200,
+					{'Content-Type': 'application/json'},
+					jsonData
+			);
+			expect(response.calledWithExactly()).toEqual(true);
+		});
+
+		it('throws a notification when the ajax search lookup fails', function () {
+			notificationStub = sinon.stub(OC.Notification, 'show');
+			dialog.render();
+			dialog.autocompleteHandler({term: 'bob'}, sinon.stub());
+			fakeServer.requests[0].respond(500);
+			expect(notificationStub.calledOnce).toEqual(true);
+			notificationStub.restore();
+		});
+
+		describe('renders the autocomplete elements', function() {
+			it('renders a group element', function() {
+				dialog.render();
+				var el = dialog.autocompleteRenderItem(
+						$("<ul></ul>"),
+						{label: "1", value: { shareType: OC.Share.SHARE_TYPE_GROUP }}
+				);
+				expect(el.is('li')).toEqual(true);
+				expect(el.hasClass('group')).toEqual(true);
+			});
+
+			it('renders a remote element', function() {
+				dialog.render();
+				var el = dialog.autocompleteRenderItem(
+						$("<ul></ul>"),
+						{label: "1", value: { shareType: OC.Share.SHARE_TYPE_REMOTE }}
+				);
+				expect(el.is('li')).toEqual(true);
+				expect(el.hasClass('user')).toEqual(true);
 			});
 		});
 	});

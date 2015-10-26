@@ -44,6 +44,7 @@ namespace OCA\Files_Versions;
 use OCA\Files_Versions\AppInfo\Application;
 use OCA\Files_Versions\Command\Expire;
 use OCP\Lock\ILockingProvider;
+use OCP\Files\NotFoundException;
 
 class Storage {
 
@@ -74,15 +75,24 @@ class Storage {
 	/** @var \OCA\Files_Versions\AppInfo\Application */
 	private static $application;
 
+	/**
+	 * @param string $filename
+	 * @return array
+	 * @throws \OC\User\NoUserException
+	 */
 	public static function getUidAndFilename($filename) {
 		$uid = \OC\Files\Filesystem::getOwner($filename);
 		\OC\Files\Filesystem::initMountPoints($uid);
 		if ( $uid != \OCP\User::getUser() ) {
 			$info = \OC\Files\Filesystem::getFileInfo($filename);
 			$ownerView = new \OC\Files\View('/'.$uid.'/files');
-			$filename = $ownerView->getPath($info['fileid']);
+			try {
+				$filename = $ownerView->getPath($info['fileid']);
+			} catch (NotFoundException $e) {
+				$filename = null;
+			}
 		}
-		return array($uid, $filename);
+		return [$uid, $filename];
 	}
 
 	/**
@@ -347,7 +357,20 @@ class Storage {
 		$view->lockFile($path1, ILockingProvider::LOCK_EXCLUSIVE);
 		$view->lockFile($path2, ILockingProvider::LOCK_EXCLUSIVE);
 
-		$result = $storage2->moveFromStorage($storage1, $internalPath1, $internalPath2);
+		// TODO add a proper way of overwriting a file while maintaining file ids
+		if ($storage1->instanceOfStorage('\OC\Files\ObjectStore\ObjectStoreStorage') || $storage2->instanceOfStorage('\OC\Files\ObjectStore\ObjectStoreStorage')) {
+			$source = $storage1->fopen($internalPath1, 'r');
+			$target = $storage2->fopen($internalPath2, 'w');
+			list(, $result) = \OC_Helper::streamCopy($source, $target);
+			fclose($source);
+			fclose($target);
+
+			if ($result !== false) {
+				$storage1->unlink($internalPath1);
+			}
+		} else {
+			$result = $storage2->moveFromStorage($storage1, $internalPath1, $internalPath2);
+		}
 
 		$view->unlockFile($path1, ILockingProvider::LOCK_EXCLUSIVE);
 		$view->unlockFile($path2, ILockingProvider::LOCK_EXCLUSIVE);
@@ -663,17 +686,21 @@ class Storage {
 
 			// calculate available space for version history
 			// subtract size of files and current versions size from quota
-			if ($softQuota) {
-				$files_view = new \OC\Files\View('/'.$uid.'/files');
-				$rootInfo = $files_view->getFileInfo('/', false);
-				$free = $quota-$rootInfo['size']; // remaining free space for user
-				if ( $free > 0 ) {
-					$availableSpace = ($free * self::DEFAULTMAXSIZE / 100) - ($versionsSize + $offset); // how much space can be used for versions
+			if ($quota >= 0) {
+				if ($softQuota) {
+					$files_view = new \OC\Files\View('/' . $uid . '/files');
+					$rootInfo = $files_view->getFileInfo('/', false);
+					$free = $quota - $rootInfo['size']; // remaining free space for user
+					if ($free > 0) {
+						$availableSpace = ($free * self::DEFAULTMAXSIZE / 100) - ($versionsSize + $offset); // how much space can be used for versions
+					} else {
+						$availableSpace = $free - $versionsSize - $offset;
+					}
 				} else {
-					$availableSpace = $free - $versionsSize - $offset;
+					$availableSpace = $quota - $offset;
 				}
 			} else {
-				$availableSpace = $quota - $offset;
+				$availableSpace = PHP_INT_MAX;
 			}
 
 			$allVersions = Storage::getVersions($uid, $filename);

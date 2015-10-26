@@ -207,15 +207,31 @@ class View extends \Test\TestCase {
 		$rootView = new \OC\Files\View('');
 
 		$cachedData = $rootView->getFileInfo('/foo.txt');
+		/** @var int $id1 */
 		$id1 = $cachedData['fileid'];
 		$this->assertEquals('/foo.txt', $rootView->getPath($id1));
 
 		$cachedData = $rootView->getFileInfo('/substorage/foo.txt');
+		/** @var int $id2 */
 		$id2 = $cachedData['fileid'];
 		$this->assertEquals('/substorage/foo.txt', $rootView->getPath($id2));
 
 		$folderView = new \OC\Files\View('/substorage');
 		$this->assertEquals('/foo.txt', $folderView->getPath($id2));
+	}
+
+	/**
+	 * @expectedException \OCP\Files\NotFoundException
+	 */
+	function testGetPathNotExisting() {
+		$storage1 = $this->getTestStorage();
+		\OC\Files\Filesystem::mount($storage1, [], '/');
+
+		$rootView = new \OC\Files\View('');
+		$cachedData = $rootView->getFileInfo('/foo.txt');
+		/** @var int $id1 */
+		$id1 = $cachedData['fileid'];
+		$folderView = new \OC\Files\View('/substorage');
 		$this->assertNull($folderView->getPath($id1));
 	}
 
@@ -2274,5 +2290,54 @@ class View extends \Test\TestCase {
 			return ILockingProvider::LOCK_SHARED;
 		}
 		return null;
+	}
+
+
+	public function testRemoveMoveableMountPoint() {
+		$mountPoint = '/' . $this->user . '/files/mount/';
+
+		// Mock the mount point
+		$mount = $this->getMockBuilder('\Test\TestMoveableMountPoint')
+			->disableOriginalConstructor()
+			->getMock();
+		$mount->expects($this->once())
+			->method('getMountPoint')
+			->willReturn($mountPoint);
+		$mount->expects($this->once())
+			->method('removeMount')
+			->willReturn('foo');
+		$mount->expects($this->any())
+			->method('getInternalPath')
+			->willReturn('');
+
+		// Register mount
+		\OC\Files\Filesystem::getMountManager()->addMount($mount);
+
+		// Listen for events
+		$eventHandler = $this->getMockBuilder('\stdclass')
+			->setMethods(['umount', 'post_umount'])
+			->getMock();
+		$eventHandler->expects($this->once())
+			->method('umount')
+			->with([\OC\Files\Filesystem::signal_param_path => '/mount']);
+		$eventHandler->expects($this->once())
+			->method('post_umount')
+			->with([\OC\Files\Filesystem::signal_param_path => '/mount']);
+		\OCP\Util::connectHook(
+			\OC\Files\Filesystem::CLASSNAME,
+			'umount',
+			$eventHandler,
+			'umount'
+		);
+		\OCP\Util::connectHook(
+			\OC\Files\Filesystem::CLASSNAME,
+			'post_umount',
+			$eventHandler,
+			'post_umount'
+		);
+
+		//Delete the mountpoint
+		$view = new \OC\Files\View('/' . $this->user . '/files');
+		$this->assertEquals('foo', $view->rmdir('mount'));
 	}
 }

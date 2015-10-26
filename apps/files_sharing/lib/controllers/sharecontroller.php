@@ -233,9 +233,10 @@ class ShareController extends Controller {
 	 * @param string $token
 	 * @param string $files
 	 * @param string $path
+	 * @param string $downloadStartSecret
 	 * @return void|RedirectResponse
 	 */
-	public function downloadShare($token, $files = null, $path = '') {
+	public function downloadShare($token, $files = null, $path = '', $downloadStartSecret = '') {
 		\OC_User::setIncognitoMode(true);
 
 		$linkItem = OCP\Share::getShareByToken($token, false);
@@ -288,6 +289,19 @@ class ShareController extends Controller {
 			}
 		}
 
+		/**
+		 * this sets a cookie to be able to recognize the start of the download
+		 * the content must not be longer than 32 characters and must only contain
+		 * alphanumeric characters
+		 */
+		if (!empty($downloadStartSecret)
+			&& !isset($downloadStartSecret[32])
+			&& preg_match('!^[a-zA-Z0-9]+$!', $downloadStartSecret) === 1) {
+
+			// FIXME: set on the response once we use an actual app framework response
+			setcookie('ocDownloadStarted', $downloadStartSecret, time() + 20, '/');
+		}
+
 		// download selected files
 		if (!is_null($files)) {
 			// FIXME: The exit is required here because otherwise the AppFramework is trying to add headers as well
@@ -319,8 +333,7 @@ class ShareController extends Controller {
 				OC_Util::tearDownFS();
 				OC_Util::setupFS($rootLinkItem['uid_owner']);
 				$path = Filesystem::getPath($linkItem['file_source']);
-
-				if(!empty($path) && Filesystem::isReadable($path)) {
+				if(Filesystem::isReadable($path)) {
 					return $path;
 				}
 			}

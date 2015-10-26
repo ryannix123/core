@@ -5,10 +5,12 @@ OC.L10N.register(
     "Personal" : "Personal",
     "Grant access" : "Conceder acceso",
     "Access granted" : "Acceso concedido",
+    "Saved" : "Guardado",
     "None" : "Ninguno",
     "Username" : "Nombre de usuario",
     "Password" : "Contraseña",
     "API key" : "clave API",
+    "Public key" : "Llave pública",
     "Port" : "Puerto",
     "WebDAV" : "WebDAV",
     "URL" : "URL",
@@ -20,7 +22,6 @@ OC.L10N.register(
     "Folder name" : "Nombre de la carpeta",
     "Configuration" : "Configuración",
     "Delete" : "Eliminar",
-    "Add storage" : "Añadir almacenamiento",
-    "Enable User External Storage" : "Habilitar almacenamiento externo de usuario"
+    "Add storage" : "Añadir almacenamiento"
 },
 "nplurals=2; plural=(n != 1);");

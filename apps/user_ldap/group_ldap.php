@@ -33,7 +33,6 @@ namespace OCA\user_ldap;
 
 use OCA\user_ldap\lib\Access;
 use OCA\user_ldap\lib\BackendUtility;
-use OCA\user_ldap\lib\user\User;
 
 class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 	protected $enabled = false;
@@ -198,11 +197,7 @@ class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 			return array();
 		}
 		$seen[$DN] = 1;
-		$user = $this->access->userManager->get($DN);
-		if(!$user instanceof User) {
-			return array();
-		}
-		$groups = $user->getMemberOfGroups();
+		$groups = $this->access->readAttribute($DN, 'memberOf');
 		if (!is_array($groups)) {
 			return array();
 		}
@@ -214,7 +209,7 @@ class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 				$subGroups = $this->_getGroupDNsFromMemberOf($group, $seen);
 				$allGroups = array_merge($allGroups, $subGroups);
 			}
-		}	
+		}
 		return $allGroups;	
 	}
 
@@ -247,7 +242,7 @@ class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 		if(empty($result)) {
 			return false;
 		}
-		$dn = $result[0];
+		$dn = $result[0]['dn'][0];
 
 		//and now the group name
 		//NOTE once we have separate ownCloud group IDs and group names we can
@@ -491,7 +486,7 @@ class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 			array($this->access->connection->ldapGroupDisplayName, 'dn'));
 		if (is_array($groups)) {
 			foreach ($groups as $groupobj) {
-				$groupDN = $groupobj['dn'];
+				$groupDN = $groupobj['dn'][0];
 				$allGroups[$groupDN] = $groupobj;
 				$nestedGroups = $this->access->connection->ldapNestedGroups;
 				if (!empty($nestedGroups)) {
@@ -653,7 +648,7 @@ class GROUP_LDAP extends BackendUtility implements \OCP\GroupInterface {
 					str_replace('%uid', $member, $this->access->connection->ldapLoginFilter),
 					$this->access->getFilterPartForUserSearch($search)
 				));
-				$ldap_users = $this->access->fetchListOfUsers($filter, 'dn');
+				$ldap_users = $this->access->fetchListOfUsers($filter, 'dn', 1);
 				if(count($ldap_users) < 1) {
 					continue;
 				}
