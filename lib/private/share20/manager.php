@@ -45,12 +45,23 @@ class Manager {
 								IUserManager $userManager,
 								IGroupManager $groupManager,
 								ILogger $logger,
-								IAppConfig $appConfig) {
+								IAppConfig $appConfig,
+								IShareProvider $defaultProvider) {
 		$this->user = $user;
 		$this->userManager = $userManager;
 		$this->groupManager = $groupManager;
 		$this->logger = $logger;
 		$this->appConfig = $appConfig;
+
+		// TEMP SOLUTION JUST TO GET STARTED
+		$this->shareProviders['ocdef'] = $defaultProvider;
+		$this->shareTypeToProvider = [
+			\OCP\Share::SHARE_TYPE_USER  => 'ocdef',
+			\OCP\Share::SHARE_TYPE_GROUP => 'ocdef',
+			\OCP\Share::SHARE_TYPE_LINK  => 'ocdef',
+		];
+
+
 
 		// TODO: Get storage share provider from primary storage
 	}
