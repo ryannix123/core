@@ -1658,7 +1658,10 @@
 						}
 						self.showFileBusyState($tr, false);
 					}
-				);
+				)
+				.fail(function(){
+					console.log('move - An error happened', arguments);
+				});
 			});
 
 		},
@@ -1858,7 +1861,10 @@
 						deferred.reject(result.status, result.data);
 					}
 				}
-			);
+			)
+			.fail(function(){
+				console.log('createFile - An error happened', arguments);
+			});
 
 			return promise;
 		},
@@ -1904,7 +1910,10 @@
 						deferred.reject(result.status);
 					}
 				}
-			);
+			)
+			.fail(function(){
+				console.log('createDirectory - An error happened', arguments);
+			});
 
 			return promise;
 		},
@@ -2034,7 +2043,10 @@
 								});
 							}
 						}
-					});
+					})
+				.fail(function(){
+					console.log('do_delete - An error happened', arguments);
+				});
 		},
 		/**
 		 * Creates the file summary section
