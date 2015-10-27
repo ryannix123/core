@@ -368,20 +368,6 @@ class FeatureContext extends BehatContext {
 	 * @When /^creating the user "([^"]*)"$/
 	 */
 	public function creatingTheUser($user) {
-		/*
-		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user";
-		$client = new Client();
-		$options = [];
-		if ($this->currentUser === 'admin') {
-			$options['auth'] = $this->adminUser;
-		}
-
-		$this->response = $client->post($fullUrl, [
-			'form_params' => [
-				'userid' => $user,
-				'password' => '123456'
-			]
-		]);*/
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users";
 		$client = new Client();
 		$options = [];
@@ -445,6 +431,34 @@ class FeatureContext extends BehatContext {
 	}
 
 	/**
+	 * @Given /^Add user "([^"]*)" to the group "([^"]*)"$/
+	 */
+	public function addUserToGroup($user, $group) {
+		$this->userExists($user);
+		$this->groupExists($group);
+		$this->addingUserToGroup($user, $group);
+
+	}
+
+	/**
+	 * @When /^User "([^"]*)" is added to the group "([^"]*)"$/
+	 */
+	public function addingUserToGroup($user, $group) {
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user/groups";
+		$client = new Client();
+		$options = [];
+		if ($this->currentUser === 'admin') {
+			$options['auth'] = $this->adminUser;
+		}
+
+		$options['body'] = [
+							'groupid' => $group,
+							];
+
+		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+	}
+
+	/**
 	 * @Given /^group "([^"]*)" exists$/
 	 */
 	public function groupExists($group) {
@@ -495,5 +509,42 @@ class FeatureContext extends BehatContext {
 		} catch (\GuzzleHttp\Exception\ClientException $ex) {
 			$this->response = $ex->getResponse();
 		}
+	}
+
+	/**
+	 * @Then /^Public shared file "([^"]*)" can be downloaded$/
+	 */
+	public function checkPublicSharedFile($filename) {
+		$client = new Client();
+		$options = [];
+		$url = $this->response->xml()->data[0]->url;
+		$fullUrl = $url . "/download";
+		$options['save_to'] = "./$filename";
+		$this->response = $client->get($fullUrl, $options);
+		$finfo = new finfo;
+		$fileinfo = $finfo->file("./$filename", FILEINFO_MIME_TYPE);
+		PHPUnit_Framework_Assert::assertEquals($fileinfo, "text/plain");
+		if (file_exists("./$filename")) {
+        	unlink("./$filename");
+        }
+	}
+
+	/**
+	 * @Then /^Public shared file "([^"]*)" with password "([^"]*)" can be downloaded$/
+	 */
+	public function checkPublicSharedFileWithPassword($filename, $password) {
+		$client = new Client();
+		$options = [];
+		$token = $this->response->xml()->data[0]->token;
+		$fullUrl = substr($this->baseUrl, 0, -4) . "public.php/webdav";
+		$options['auth'] = [$token, $password];
+		$options['save_to'] = "./$filename";
+		$this->response = $client->get($fullUrl, $options);
+		$finfo = new finfo;
+		$fileinfo = $finfo->file("./$filename", FILEINFO_MIME_TYPE);
+		PHPUnit_Framework_Assert::assertEquals($fileinfo, "text/plain");
+		if (file_exists("./$filename")) {
+        	unlink("./$filename");
+        }
 	}
 }
