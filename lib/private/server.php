@@ -521,6 +521,16 @@ class Server extends SimpleContainer implements IServerContainer {
 				$request
 			);
 		});
+		$this->registerService('ShareManager', function(Server $c) {
+			return new \OC\Share20\Manager(
+				$c->getUserSession()->getUser(),
+				$c->getUserManager(),
+				$c->getGroupManager(),
+				$c->getLogger(),
+				$c->getAppConfig(),
+				new \OC\Share20\DefaultShareProvider()
+			);
+		});
 	}
 
 	/**
@@ -1100,6 +1110,13 @@ class Server extends SimpleContainer implements IServerContainer {
 	 */
 	public function getUserStoragesService() {
 		return \OC_Mount_Config::$app->getContainer()->query('OCA\\Files_External\\Service\\UserStoragesService');
+	}
+
+	/**
+	 * @return \OC\Share20\Manager
+	 */
+	public function getShareManager() {
+		return $this->query('ShareManager');
 	}
 	
 }
