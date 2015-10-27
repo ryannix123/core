@@ -130,3 +130,10 @@ API::register('get',
 		'/apps/files_sharing/api/v1/sharees',
 		[$sharees, 'search'],
 		'files_sharing', API::USER_AUTH);
+
+$OcsV2Api = new \OCA\Files_Sharing\API\V2\OCSWrapper();
+
+API::register('post',
+		'/apps/files_sharing/api/v2/shares',
+		[$OcsV2Api, 'createShare'],
+		'files_sharing', API::USER_AUTH);
