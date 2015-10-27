@@ -1265,5 +1265,170 @@
 
 	</table>
 
+	<table>
+
+		<!--
+		Shares of all types (user-to-user, external-via-link, etc.) for sharing 2.0
+		-->
+		<name>*dbprefix*share_20</name>
+
+		<declaration>
+
+			<field>
+				<name>id</name>
+				<autoincrement>1</autoincrement>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<length>4</length>
+			</field>
+
+			<!-- Constant OCP\Share::SHARE_TYPE_* -->
+			<field>
+				<name>share_type</name>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<length>1</length>
+			</field>
+
+			<!-- Foreign Key users::uid or groups::gid or string or NULL -->
+			<field>
+				<name>share_with</name>
+				<type>text</type>
+				<default></default>
+				<notnull>true</notnull>
+				<length>255</length>
+			</field>
+
+			<!-- Foreign Key users::uid -->
+			<field>
+				<name>shared_by</name>
+				<type>text</type>
+				<default></default>
+				<notnull>false</notnull>
+				<length>255</length>
+			</field>
+
+			<!-- Foreign Key share::id or NULL -->
+			<field>
+				<name>parent</name>
+				<type>integer</type>
+				<notnull>false</notnull>
+				<length>4</length>
+			</field>
+
+			<!-- Foreign Key filecache::fileid -->
+			<field>
+				<name>file_id</name>
+				<type>text</type>
+				<default></default>
+				<notnull>false</notnull>
+				<length>255</length>
+			</field>
+
+			<field>
+				<name>file_target</name>
+				<type>text</type>
+				<default></default>
+				<notnull>false</notnull>
+				<length>255</length>
+			</field>
+
+			<!-- Permission bitfield -->
+			<field>
+				<name>permissions</name>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<length>1</length>
+			</field>
+
+			<!-- Time of share creation -->
+			<field>
+				<name>stime</name>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<length>8</length>
+			</field>
+
+			<!-- Whether the receiver accepted the share, if share_with is set. -->
+			<field>
+				<name>accepted</name>
+				<type>integer</type>
+				<default>0</default>
+				<notnull>true</notnull>
+				<length>1</length>
+			</field>
+
+			<!-- Time of share expiration -->
+			<field>
+				<name>expiration</name>
+				<type>timestamp</type>
+				<default></default>
+				<notnull>false</notnull>
+			</field>
+
+			<field>
+				<name>token</name>
+				<type>text</type>
+				<default></default>
+				<notnull>true</notnull>
+				<length>32</length>
+			</field>
+
+			<field>
+				<name>password</name>
+				<type>text</type>
+				<default></default>
+				<notnull>false</notnull>
+				<length>255</length>
+			</field>
+
+			<index>
+				<name>share_20_file_id_index</name>
+				<field>
+					<name>file_id</name>
+					<sorting>ascending</sorting>
+				</field>
+			</index>
+			<index>
+				<name>share_20_token_index</name>
+				<field>
+					<name>token</name>
+					<sorting>ascending</sorting>
+				</field>
+			</index>
+
+            <index>
+				<name>share_20_unqiue_share</name>
+				<unique>true</unique>
+				<field>
+					<name>share_type</name>
+					<sorting>ascending</sorting>
+				</field>
+				<field>
+					<name>share_with</name>
+					<sorting>ascending</sorting>
+				</field>
+				<field>
+					<name>shared_by</name>
+					<sorting>ascending</sorting>
+				</field>
+				<field>
+					<name>file_id</name>
+					<sorting>ascending</sorting>
+				</field>
+				<field>
+					<name>token</name>
+					<sorting>ascending</sorting>
+				</field>
+			</index>
+
+		</declaration>
+
+	</table>
+
 
 </database>
