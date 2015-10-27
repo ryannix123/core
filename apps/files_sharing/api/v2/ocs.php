@@ -31,6 +31,35 @@ class OCS {
 		$this->userFolder = $userFolder;
 	}
 
+	/**
+	 * Convert a share object to an array we can output
+	 * @param \OC\Share20\Share $share
+	 * @return string[]
+	 */
+	private function formatShare(\OC\Share20\Share $share) {
+		$result = [
+			'path' => $this->userFolder->getRelativePath($share->getPath()->getPath()),
+			'permission' => $share->getPermissions(),
+			'shareType' => $share->getShareType(),
+			'shareWith' => null,
+			'expireDate' => null,
+		];
+
+		switch ($share->getShareType()) {
+			case \OCP\Share::SHARE_TYPE_USER:
+				$result['shareWith'] = $share->getShareWith()->getUID();
+				break;
+			default:
+				throw new \Exception();
+		}
+
+		if ($share->getExpirationDate() !== null) {
+			$result['expireDate'] = $share->getExpirationDate()->format('Y-m-d');
+		}
+
+		return $result;
+	}
+
 	public function createShare() {
 		// We need a path to share
 		$path = $this->request->getParam('path');
@@ -112,7 +141,9 @@ class OCS {
 
 		$share = $this->shareManager->createShare($share);
 
-		return new \OC_OCS_Result([]);
+		$output = $this->formatShare($share);
+
+		return new \OC_OCS_Result($output);
 	}
 	
 }

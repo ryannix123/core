@@ -8,6 +8,7 @@ use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\ILogger;
+use OCP\Files\Folder;
 
 use OC\Share20\Exceptions\ShareNotFoundException;
 
@@ -24,7 +25,7 @@ class Manager {
 	/**
 	 * @var string[]
 	 */
-	private $shareTypeToProvider;
+	private $shareTypeToProviderId;
 
 	/** @var IUser */
 	private $currentUser;
@@ -41,21 +42,26 @@ class Manager {
 	/** @var IAppConfig */
 	private $appConfig;
 
+	/** @var IFolder */
+	private $userFolder;
+
 	public function __construct(IUser $user,
 								IUserManager $userManager,
 								IGroupManager $groupManager,
 								ILogger $logger,
 								IAppConfig $appConfig,
+								IFolder $userFolder,
 								IShareProvider $defaultProvider) {
 		$this->user = $user;
 		$this->userManager = $userManager;
 		$this->groupManager = $groupManager;
 		$this->logger = $logger;
 		$this->appConfig = $appConfig;
+		$this->userFolder = $userFolder;
 
 		// TEMP SOLUTION JUST TO GET STARTED
 		$this->shareProviders['ocdef'] = $defaultProvider;
-		$this->shareTypeToProvider = [
+		$this->shareTypeToProviderId = [
 			\OCP\Share::SHARE_TYPE_USER  => 'ocdef',
 			\OCP\Share::SHARE_TYPE_GROUP => 'ocdef',
 			\OCP\Share::SHARE_TYPE_LINK  => 'ocdef',
@@ -110,13 +116,8 @@ class Manager {
 		}
 
 		// Check if we have instanciated this provider yet
-		if (!($this->shareProviders[$id] instanceOf OC\Share20\IShareProvider)) {
-			$this->shareProviders[$id] = call_user_func($this->shareProviders[$id]);
-
-			// Check if it actually is a IShareProvider
-			if (!($provider instanceOf OC\Share20\IShareProvider)) {
-				//TODO Throw exception
-			}
+		if (!($this->shareProviders[$id] instanceOf \OC\Share20\IShareProvider)) {
+			throw new \Exception();
 		}
 
 		return $this->shareProviders[$id];
@@ -144,9 +145,66 @@ class Manager {
 	 */
 	public function createShare(Share $share) {
 		$provider = $this->getShareProviderByType($share->getShareType());
-		$share = $provider->create($share);
 
-		//TODO set proper provider ID to share
+		/* 
+		 * TODO MORE SANITY CHECKS!
+		 * internalId should not be set
+		 * providerId should not be set
+		 * sharedBy should not be set
+		 * shareOwner should not be set
+		 */
+
+		//Make sure we try to share a folder we can access
+		if (!$this->userFolder->isSubNode($share->getPath())) {
+			//TODO proper exception
+			throw new \Exception();
+		}
+		
+		// Can we actually share the path?
+		if (!$share->getPath()->isShareable()) {
+			throw new \Exception();
+		}
+
+		//Check that permissions are in range
+		if (($share->getPermissions() & ~\OCP\Constants::PERMISSION_ALL) !== 0) {
+			throw new \Exception();
+		}
+
+		//Shares should have at least read permissions
+		if (($share->getPermissions() & \OCP\Constants::PERMISSION_READ) === 0) {
+			throw new \Exception();
+		}
+
+		// Files can't be shared with delete permissions
+		if ($share->getPath() instanceof \OCP\Files\File &&
+			($share->getPermissions() & \OCP\Constants::PERMISSION_DELETE) !== 0) {
+			throw new \Exception();
+		}
+
+		if ($share->getShareType() === \OCP\Share::SHARE_TYPE_USER) {
+			//TODO Can we share with this user?
+		} else {
+			//NOT IMPLEMENTED YET
+			throw new \Exception();
+		}
+
+		// DateTime should not be in the past!
+		//TODO proper exception here?
+		$expireDate = $share->getExpirationDate();
+		if ($expireDate !== null) {
+			$expireDate->setTimezone(new \DateTimeZone(\DateTimeZone::UTC));
+			$expireDate->setTime(0,0,0);
+
+			$today = new \DateTime();
+			$tomorrow->setTime(0,0,0);
+
+			if($expireDate <= $tomorrow) {
+				throw new \Exception();
+			}
+		}
+
+		$share = $provider->create($share);
+		$share->setProviderId($this->shareTypeToProviderId[$this->shareType]);
 
 		return $share;
 	}

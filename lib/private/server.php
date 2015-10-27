@@ -528,6 +528,7 @@ class Server extends SimpleContainer implements IServerContainer {
 				$c->getGroupManager(),
 				$c->getLogger(),
 				$c->getAppConfig(),
+				$c->getUserFolder(),
 				new \OC\Share20\DefaultShareProvider()
 			);
 		});

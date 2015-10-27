@@ -13,6 +13,9 @@ class DefaultShareProvider implements IShareProvider {
 	 * @return Share The share object
 	 */
 	public function create(Share $share) {
+		$share->setInternalId(strval(1));
+
+		return $share;
 	}
 
 	/**
