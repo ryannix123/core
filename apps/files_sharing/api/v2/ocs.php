@@ -50,6 +50,12 @@ class OCS {
 			case \OCP\Share::SHARE_TYPE_USER:
 				$result['shareWith'] = $share->getShareWith()->getUID();
 				break;
+			case \OCP\Share::SHARE_TYPE_GROUP:
+				$result['shareWith'] = $share->getShareWith()->getGID();
+				break;
+			case \OCP\Share::SHARE_TYPE_LINK:
+				$result['shareWith'] = $share->getShareWith();
+				break;
 			default:
 				throw new \Exception();
 		}
