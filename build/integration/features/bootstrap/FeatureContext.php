@@ -23,6 +23,9 @@ class FeatureContext extends BehatContext {
 	/** @var int */
 	private $apiVersion = 1;
 
+	/** @var SimpleXMLElement */
+	private $lastShareData = null;
+
 	/**
 	 * Initializes context.
 	 * Every scenario gets it's own context object.
@@ -284,7 +287,6 @@ class FeatureContext extends BehatContext {
 		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 
-
 	/**
 	 * @Given /^user "([^"]*)" does not exist$/
 	 */
@@ -512,12 +514,21 @@ class FeatureContext extends BehatContext {
 	}
 
 	/**
+	 * @When /^creating a public share with$/
+	 * @param \Behat\Gherkin\Node\TableNode|null $formData
+	 */
+	public function createPublicShare($body) {
+		$this->sendingToWith("POST", "/apps/files_sharing/api/v1/shares", $body);
+		$this->lastShareData = $this->response->xml();
+	}
+
+	/**
 	 * @Then /^Public shared file "([^"]*)" can be downloaded$/
 	 */
 	public function checkPublicSharedFile($filename) {
 		$client = new Client();
 		$options = [];
-		$url = $this->response->xml()->data[0]->url;
+		$url = $this->lastShareData->data[0]->url;
 		$fullUrl = $url . "/download";
 		$options['save_to'] = "./$filename";
 		$this->response = $client->get($fullUrl, $options);
@@ -535,7 +546,7 @@ class FeatureContext extends BehatContext {
 	public function checkPublicSharedFileWithPassword($filename, $password) {
 		$client = new Client();
 		$options = [];
-		$token = $this->response->xml()->data[0]->token;
+		$token = $this->lastShareData->data[0]->token;
 		$fullUrl = substr($this->baseUrl, 0, -4) . "public.php/webdav";
 		$options['auth'] = [$token, $password];
 		$options['save_to'] = "./$filename";
@@ -546,5 +557,24 @@ class FeatureContext extends BehatContext {
 		if (file_exists("./$filename")) {
         	unlink("./$filename");
         }
+	}
+
+	/**
+	 * @When /^Adding expiration date to last share$/
+	 */
+	public function addingExpirationDate() {
+		$share_id = $this->lastShareData->data[0]->id;
+		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/apps/files_sharing/api/v{$this->apiVersion}/shares/$share_id";
+		$client = new Client();
+		$options = [];
+		if ($this->currentUser === 'admin') {
+			$options['auth'] = $this->adminUser;
+		} else {
+			$options['auth'] = [$this->currentUser, $this->regularUser];
+		}
+		$date = date('Y-m-d', strtotime("+3 days"));
+		$options['body'] = ['expireDate' => $date];
+		$this->response = $client->send($client->createRequest("PUT", $fullUrl, $options));
+		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 }
