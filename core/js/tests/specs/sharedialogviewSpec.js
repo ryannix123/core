@@ -146,7 +146,8 @@ describe('OC.Share.ShareDialogView', function() {
 
 			expect(fakeServer.requests[1].method).toEqual('POST');
 			var body = OC.parseQueryString(fakeServer.requests[1].requestBody);
-			expect(body.shareWith).toEqual('foo');
+			expect(body['shareWith[password]']).toEqual('foo');
+			expect(body['shareWith[passwordChanged]']).toEqual('true');
 
 			fetchStub.reset();
 
@@ -185,7 +186,8 @@ describe('OC.Share.ShareDialogView', function() {
 
 			expect(fakeServer.requests[1].method).toEqual('POST');
 			var body = OC.parseQueryString(fakeServer.requests[1].requestBody);
-			expect(body.shareWith).toEqual('foo');
+			expect(body['shareWith[password]']).toEqual('foo');
+			expect(body['shareWith[passwordChanged]']).toEqual('true');
 
 			fetchStub.reset();
 
@@ -234,6 +236,29 @@ describe('OC.Share.ShareDialogView', function() {
 
 			expect(dialog.$el.find('.linkCheckbox').prop('checked')).toEqual(true);
 			expect(dialog.$el.find('.linkText').val()).toEqual(link);
+		});
+		it('autofocus link text when clicked', function() {
+			$('#allowShareWithLink').val('yes');
+
+			dialog.render();
+
+			// Toggle linkshare
+			dialog.$el.find('.linkCheckbox').click();
+			fakeServer.requests[0].respond(
+				200,
+				{ 'Content-Type': 'application/json' },
+				JSON.stringify({data: {token: 'xyz'}, status: 'success'})
+			);
+
+			var focusStub = sinon.stub($.fn, 'focus');
+			var selectStub = sinon.stub($.fn, 'select');
+			dialog.$el.find('.linkText').click();
+
+			expect(focusStub.calledOnce).toEqual(true);
+			expect(selectStub.calledOnce).toEqual(true);
+
+			focusStub.restore();
+			selectStub.restore();
 		});
 		describe('password', function() {
 			var slideToggleStub;
@@ -440,7 +465,7 @@ describe('OC.Share.ShareDialogView', function() {
 				clock.restore();
 			});
 
-			it('displayes form when sending emails is enabled', function() {
+			it('displays form when sending emails is enabled', function() {
 				$('input[name=mailPublicNotificationEnabled]').val('yes');
 				dialog.render();
 				expect(dialog.$('.emailPrivateLinkForm').length).toEqual(1);
@@ -677,7 +702,7 @@ describe('OC.Share.ShareDialogView', function() {
 		});
 	});
 	describe('remote sharing', function() {
-		it('shows remote share info when allows', function() {
+		it('shows remote share info when allowed', function() {
 			configModel.set({
 				isRemoteShareAllowed: true
 			});
@@ -692,7 +717,7 @@ describe('OC.Share.ShareDialogView', function() {
 			expect(dialog.$el.find('.shareWithRemoteInfo').length).toEqual(0);
 		});
 	});
-	describe('autocompeltion of users', function() {
+	describe('autocompletion of users', function() {
 		it('triggers autocomplete display and focus with data when ajax search succeeds', function () {
 			dialog.render();
 			var response = sinon.stub();
@@ -755,4 +780,3 @@ describe('OC.Share.ShareDialogView', function() {
 		});
 	});
 });
-
