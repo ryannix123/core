@@ -52,7 +52,7 @@ class Manager {
 								IAppConfig $appConfig,
 								IFolder $userFolder,
 								IShareProvider $defaultProvider) {
-		$this->user = $user;
+		$this->currentUser = $user;
 		$this->userManager = $userManager;
 		$this->groupManager = $groupManager;
 		$this->logger = $logger;
@@ -146,13 +146,22 @@ class Manager {
 	public function createShare(Share $share) {
 		$provider = $this->getShareProviderByType($share->getShareType());
 
-		/* 
-		 * TODO MORE SANITY CHECKS!
-		 * internalId should not be set
-		 * providerId should not be set
-		 * sharedBy should not be set
-		 * shareOwner should not be set
-		 */
+		if ($share->getInternalId() !== null) {
+			throw new \Exception();
+		}
+
+		if ($share->getProviderId() !== null) {
+			throw new \Exception();
+		}
+
+		if ($share->getSharedBy() !== null) {
+			//TODO if it is set maybe check if it correct before failing
+			throw new \Exception();
+		}
+
+		if ($share->getShareOwner() !== null) {
+			throw new \Exception();
+		}
 
 		//Make sure we try to share a folder we can access
 		if (!$this->userFolder->isSubNode($share->getPath())) {
@@ -189,7 +198,8 @@ class Manager {
 		}
 
 		// DateTime should not be in the past!
-		//TODO proper exception here?
+		//TODO: proper exception here?
+		//TODO: check against expiredate settings
 		$expireDate = $share->getExpirationDate();
 		if ($expireDate !== null) {
 			$expireDate->setTimezone(new \DateTimeZone(\DateTimeZone::UTC));
@@ -203,8 +213,13 @@ class Manager {
 			}
 		}
 
+		// The current user shares the file
+		$share->setSharedBy($this->currentUser);
+
+		// TODO: Check if we are allowed to reshare
+
 		$share = $provider->create($share);
-		$share->setProviderId($this->shareTypeToProviderId[$this->shareType]);
+		$share->setProviderId($this->shareTypeToProviderId[$share->getShareType()]);
 
 		return $share;
 	}

@@ -38,6 +38,7 @@ class OCS {
 	 */
 	private function formatShare(\OC\Share20\Share $share) {
 		$result = [
+			'id' => $share->getId(),
 			'path' => $this->userFolder->getRelativePath($share->getPath()->getPath()),
 			'permission' => $share->getPermissions(),
 			'shareType' => $share->getShareType(),

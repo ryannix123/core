@@ -67,7 +67,7 @@ class Share {
 	 * @return Share The modified object
 	 */
 	public function setInternalId($id) {
-		$this->id = $id;
+		$this->internalId = $id;
 		return $this;
 	}
 
@@ -88,7 +88,7 @@ class Share {
 	 */
 	public function getId() {
 		//TODO $id should be set as well as $providerId
-		return $this->providerId . ':' . $this->id;
+		return $this->providerId . ':' . $this->internalId;
 	}
 
 	/**
