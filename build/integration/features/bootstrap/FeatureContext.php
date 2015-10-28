@@ -200,16 +200,27 @@ class FeatureContext extends BehatContext {
 	/**
 	 * @Given /^user "([^"]*)" exists$/
 	 */
-	public function userExists($user) {
+	public function assureUserExists($user) {
+		try {
+			$this->userExists($user);			
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
+			$previous_user = $this->currentUser;
+			$this->currentUser = "admin";
+			$this->creatingTheUser($user);
+			$this->currentUser = $previous_user;
+		}
+		$this->userExists($user);
+		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
+
+	}
+
+	public function userExists($user){
 		$fullUrl = $this->baseUrl . "v2.php/cloud/users/$user";
 		$client = new Client();
 		$options = [];
-		if ($this->currentUser === 'admin') {
-			$options['auth'] = $this->adminUser;
-		}
+		$options['auth'] = $this->adminUser;
 
 		$this->response = $client->get($fullUrl, $options);
-		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 
 	/**
@@ -293,7 +304,17 @@ class FeatureContext extends BehatContext {
 	public function userDoesNotExist($user) {
 		try {
 			$this->userExists($user);
-			PHPUnit_Framework_Assert::fail('The user "' . $user . '" exists');
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
+			$this->response = $ex->getResponse();
+			PHPUnit_Framework_Assert::assertEquals(404, $ex->getResponse()->getStatusCode());
+			return;
+		}
+		$previous_user = $this->currentUser;
+		$this->currentUser = "admin";
+		$this->deletingTheUser($user);
+		$this->currentUser = $previous_user;
+		try {
+			$this->userExists($user);
 		} catch (\GuzzleHttp\Exception\ClientException $ex) {
 			$this->response = $ex->getResponse();
 			PHPUnit_Framework_Assert::assertEquals(404, $ex->getResponse()->getStatusCode());
@@ -334,41 +355,26 @@ class FeatureContext extends BehatContext {
 		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 
-	/**
-	 * @Given /^Create user "([^"]*)"$/
-	 */
 	public function createUser($user) {
 		$this->creatingTheUser($user);
 		$this->userExists($user);
 	}
 
-	/**
-	 * @Then /^Delete user "([^"]*)"$/
-	 */
 	public function deleteUser($user) {
 		$this->deletingTheUser($user);
 		$this->userDoesNotExist($user);
 	}
 
-	/**
-	 * @Given /^Create group "([^"]*)"$/
-	 */
 	public function createGroup($group) {
 		$this->creatingTheGroup($group);
 		$this->groupExists($group);
 	}
 
-	/**
-	 * @Then /^Delete group "([^"]*)"$/
-	 */
 	public function deleteGroup($group) {
 		$this->deletingTheGroup($group);
 		$this->groupDoesNotExist($group);
 	}
 
-	/**
-	 * @When /^creating the user "([^"]*)"$/
-	 */
 	public function creatingTheUser($user) {
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users";
 		$client = new Client();
@@ -460,18 +466,29 @@ class FeatureContext extends BehatContext {
 		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
 	}
 
-	/**
-	 * @Given /^group "([^"]*)" exists$/
-	 */
+
 	public function groupExists($group) {
 		$fullUrl = $this->baseUrl . "v2.php/cloud/groups/$group";
 		$client = new Client();
 		$options = [];
-		if ($this->currentUser === 'admin') {
-			$options['auth'] = $this->adminUser;
-		}
+		$options['auth'] = $this->adminUser;
 
 		$this->response = $client->get($fullUrl, $options);
+	}
+
+	/**
+	 * @Given /^group "([^"]*)" exists$/
+	 */
+	public function assureGroupExists($group) {
+		try {
+			$this->groupExists($group);			
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
+			$previous_user = $this->currentUser;
+			$this->currentUser = "admin";
+			$this->creatingTheGroup($group);
+			$this->currentUser = $previous_user;
+		}
+		$this->groupExists($group);
 		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 
@@ -481,7 +498,17 @@ class FeatureContext extends BehatContext {
 	public function groupDoesNotExist($group) {
 		try {
 			$this->groupExists($group);
-			PHPUnit_Framework_Assert::fail('The group "' . $group . '" exists');
+		} catch (\GuzzleHttp\Exception\ClientException $ex) {
+			$this->response = $ex->getResponse();
+			PHPUnit_Framework_Assert::assertEquals(404, $ex->getResponse()->getStatusCode());
+			return;
+		}
+		$previous_user = $this->currentUser;
+		$this->currentUser = "admin";
+		$this->deletingTheGroup($group);
+		$this->currentUser = $previous_user;
+		try {
+			$this->groupExists($group);
 		} catch (\GuzzleHttp\Exception\ClientException $ex) {
 			$this->response = $ex->getResponse();
 			PHPUnit_Framework_Assert::assertEquals(404, $ex->getResponse()->getStatusCode());
